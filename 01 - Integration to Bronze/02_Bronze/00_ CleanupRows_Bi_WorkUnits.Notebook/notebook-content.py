@@ -27,7 +27,7 @@
 # **Purpose**: Read from Raw, apply cleaning rules, and write cleaned data to Bronze.
 # 
 # **Transformation Steps**:
-# 1. **Filter deleted rows** using integration tables (`vEngagementsLastUpdate`, `vEngagementsMonthlyDataLastUpda`)
+# 1. **Filter deleted rows** using integration tables (`vEngagementsLastUpdate`, `vEngagementsMonthlyDataLastUpdate`)
 #    - Remove work units for `EngagementID` where `IsDeleted=1`
 #    - Remove work units for `MonthlyDataID` where `IsDeleted=1`
 # 2. **Deduplicate** keeping only the most recent version per composite PK `(ID, MonthlyDataID)`
@@ -85,7 +85,7 @@ TIMESTAMP_COL = "LastUpdateDate"
 # PARAMETERS CELL ********************
 
 # Processing mode: "today" | "all" | "last_n"
-PROCESSING_MODE= "all"
+PROCESSING_MODE= "last_n"
 
 # Number of partitions to process when mode = "last_n"
 LAST_N_PARTITIONS=1
@@ -463,7 +463,7 @@ else:
 
 # MARKDOWN ********************
 
-# ## Step 4 — Deduplicate (Keep Latest per PK)
+# ## Step 5 — Deduplicate (Keep Latest per PK)
 # 
 # Because Raw uses **APPEND** mode, the same `(ID, MonthlyDataID)` can appear multiple times. We keep only the **most recent** version based on:
 # - Latest `LastUpdateDate`
