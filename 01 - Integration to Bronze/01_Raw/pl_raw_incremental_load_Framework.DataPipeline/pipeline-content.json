@@ -1,0 +1,420 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "44123a32-49ec-b469-45f9-be9f3b5f99c9",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "action": {
+              "value": "get",
+              "type": "string"
+            },
+            "p_table_name": {
+              "value": {
+                "value": "@pipeline().parameters.TabletoLoad",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "GetTableLastUpdateWatermark",
+        "dependsOn": []
+      },
+      {
+        "type": "IfCondition",
+        "typeProperties": {
+          "expression": {
+            "value": "@equals(activity('GetTableLastUpdateWatermark').output.result.exitValue, '1900-01-01T00:00:00')",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "type": "Copy",
+              "typeProperties": {
+                "source": {
+                  "type": "SqlServerSource",
+                  "sqlReaderQuery": {
+                    "value": "SELECT *, CONVERT(DATE, GETUTCDATE()) AS ingestion_date, GETUTCDATE() AS _ingestion_ts FROM dbo.@{pipeline().parameters.TabletoLoad}",
+                    "type": "Expression"
+                  },
+                  "partitionOption": "None",
+                  "queryTimeout": {
+                    "value": "@{pipeline().libraryVariables.QueryTimeout}",
+                    "type": "Expression"
+                  },
+                  "isolationLevel": {
+                    "value": "@pipeline().libraryVariables.IsolationLevel",
+                    "type": "Expression"
+                  },
+                  "datasetSettings": {
+                    "type": "SqlServerTable",
+                    "typeProperties": {
+                      "database": {
+                        "value": "@pipeline().libraryVariables.Database",
+                        "type": "Expression"
+                      }
+                    },
+                    "schema": [],
+                    "externalReferences": {
+                      "connection": "@pipeline().libraryVariables.SqlConnection"
+                    },
+                    "annotations": []
+                  }
+                },
+                "sink": {
+                  "type": "LakehouseTableSink",
+                  "tableActionOption": "Append",
+                  "applyVOrder": false,
+                  "partitionOption": "PartitionByKey",
+                  "partitionNameList": {
+                    "value": "@pipeline().parameters.PartitionColumn",
+                    "type": "Expression"
+                  },
+                  "datasetSettings": {
+                    "type": "LakehouseTable",
+                    "typeProperties": {
+                      "schema": "raw",
+                      "table": {
+                        "value": "@pipeline().parameters.TabletoLoad",
+                        "type": "Expression"
+                      }
+                    },
+                    "schema": [],
+                    "linkedService": {
+                      "name": "bronze_Lightway",
+                      "properties": {
+                        "type": "Lakehouse",
+                        "typeProperties": {
+                          "artifactId": "d1eff8e2-6c6f-be6b-49de-c0c715d22794",
+                          "workspaceId": "00000000-0000-0000-0000-000000000000",
+                          "rootFolder": "Tables"
+                        },
+                        "annotations": []
+                      }
+                    },
+                    "annotations": []
+                  }
+                },
+                "translator": {
+                  "type": "TabularTranslator",
+                  "typeConversion": true,
+                  "typeConversionSettings": {
+                    "allowDataTruncation": true,
+                    "treatBooleanAsNumber": false
+                  }
+                },
+                "enableStaging": false
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "CopyvTableInitial",
+              "dependsOn": [
+                {
+                  "activity": "utc_now",
+                  "dependencyConditions": [
+                    "Succeeded"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "TridentNotebook",
+              "typeProperties": {
+                "notebookId": "44123a32-49ec-b469-45f9-be9f3b5f99c9",
+                "workspaceId": "00000000-0000-0000-0000-000000000000",
+                "parameters": {
+                  "action": {
+                    "value": "set",
+                    "type": "string"
+                  },
+                  "p_table_name": {
+                    "value": {
+                      "value": "@pipeline().parameters.TabletoLoad",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "p_new_watermark": {
+                    "value": {
+                      "value": "@variables('utc_now')",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "load_type": {
+                    "value": "initial",
+                    "type": "string"
+                  }
+                }
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "SetWatermarkAfterInitial",
+              "dependsOn": [
+                {
+                  "activity": "CopyvTableInitial",
+                  "dependencyConditions": [
+                    "Succeeded"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "SetVariable",
+              "typeProperties": {
+                "variableName": "utc_now",
+                "value": {
+                  "value": "@utcNow()",
+                  "type": "Expression"
+                }
+              },
+              "policy": {
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "utc_now",
+              "dependsOn": []
+            }
+          ],
+          "ifFalseActivities": [
+            {
+              "type": "Copy",
+              "typeProperties": {
+                "source": {
+                  "type": "SqlServerSource",
+                  "sqlReaderQuery": {
+                    "value": "SELECT *, CONVERT(DATE, GETUTCDATE()) AS ingestion_date, GETUTCDATE() AS _ingestion_ts FROM dbo.@{pipeline().parameters.TabletoLoad}  WHERE LastUpdateDate > '@{activity('GetTableLastUpdateWatermark').output.result.exitValue}'\n",
+                    "type": "Expression"
+                  },
+                  "partitionOption": "None",
+                  "queryTimeout": {
+                    "value": "@{pipeline().libraryVariables.QueryTimeout}",
+                    "type": "Expression"
+                  },
+                  "isolationLevel": {
+                    "value": "@pipeline().libraryVariables.IsolationLevel",
+                    "type": "Expression"
+                  },
+                  "datasetSettings": {
+                    "type": "SqlServerTable",
+                    "typeProperties": {
+                      "database": {
+                        "value": "@pipeline().libraryVariables.Database",
+                        "type": "Expression"
+                      }
+                    },
+                    "schema": [],
+                    "externalReferences": {
+                      "connection": "@pipeline().libraryVariables.SqlConnection"
+                    },
+                    "annotations": []
+                  }
+                },
+                "sink": {
+                  "type": "LakehouseTableSink",
+                  "tableActionOption": "Append",
+                  "applyVOrder": false,
+                  "partitionOption": "PartitionByKey",
+                  "partitionNameList": {
+                    "value": "@pipeline().parameters.PartitionColumn",
+                    "type": "Expression"
+                  },
+                  "datasetSettings": {
+                    "type": "LakehouseTable",
+                    "typeProperties": {
+                      "schema": "raw",
+                      "table": {
+                        "value": "@pipeline().parameters.TabletoLoad",
+                        "type": "Expression"
+                      }
+                    },
+                    "schema": [],
+                    "linkedService": {
+                      "name": "bronze_Lightway",
+                      "properties": {
+                        "type": "Lakehouse",
+                        "typeProperties": {
+                          "artifactId": "d1eff8e2-6c6f-be6b-49de-c0c715d22794",
+                          "workspaceId": "00000000-0000-0000-0000-000000000000",
+                          "rootFolder": "Tables"
+                        },
+                        "annotations": []
+                      }
+                    },
+                    "annotations": []
+                  }
+                },
+                "translator": {
+                  "type": "TabularTranslator",
+                  "typeConversion": true,
+                  "typeConversionSettings": {
+                    "allowDataTruncation": true,
+                    "treatBooleanAsNumber": false
+                  }
+                },
+                "enableStaging": false
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "CopyvTableIncremental",
+              "dependsOn": [
+                {
+                  "activity": "utc_now_incremental",
+                  "dependencyConditions": [
+                    "Succeeded"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "TridentNotebook",
+              "typeProperties": {
+                "notebookId": "44123a32-49ec-b469-45f9-be9f3b5f99c9",
+                "workspaceId": "00000000-0000-0000-0000-000000000000",
+                "parameters": {
+                  "action": {
+                    "value": "set",
+                    "type": "string"
+                  },
+                  "p_table_name": {
+                    "value": {
+                      "value": "@pipeline().parameters.TabletoLoad",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "p_new_watermark": {
+                    "value": {
+                      "value": "@variables('utc_now')",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "load_type": {
+                    "value": "incremental",
+                    "type": "string"
+                  }
+                }
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "SetWatermarkAfterIncremental",
+              "dependsOn": [
+                {
+                  "activity": "CopyvTableIncremental",
+                  "dependencyConditions": [
+                    "Succeeded"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "SetVariable",
+              "typeProperties": {
+                "variableName": "utc_now",
+                "value": {
+                  "value": "@utcNow()",
+                  "type": "Expression"
+                }
+              },
+              "policy": {
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "utc_now_incremental",
+              "dependsOn": []
+            }
+          ]
+        },
+        "name": "CheckIfInitialLoad",
+        "dependsOn": [
+          {
+            "activity": "GetTableLastUpdateWatermark",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      }
+    ],
+    "parameters": {
+      "TabletoLoad": {
+        "type": "string",
+        "defaultValue": "vEngagementsMonthlyDataLastUpda"
+      },
+      "PartitionColumn": {
+        "type": "array",
+        "defaultValue": [
+          "ingestion_date"
+        ]
+      }
+    },
+    "libraryVariables": {
+      "SqlConnection": {
+        "type": "String",
+        "variableName": "sql_connection_name",
+        "libraryName": "vl_raw_config"
+      },
+      "DiuInitial": {
+        "type": "Int",
+        "variableName": "diu_initial_load",
+        "libraryName": "vl_raw_config"
+      },
+      "DiuIncremental": {
+        "type": "Int",
+        "variableName": "diu_incremental",
+        "libraryName": "vl_raw_config"
+      },
+      "QueryTimeout": {
+        "type": "String",
+        "variableName": "source_query_timeout",
+        "libraryName": "vl_raw_config"
+      },
+      "Database": {
+        "type": "String",
+        "variableName": "sql_database",
+        "libraryName": "vl_raw_config"
+      },
+      "IsolationLevel": {
+        "type": "String",
+        "variableName": "Isolation_level",
+        "libraryName": "vl_raw_config"
+      }
+    },
+    "variables": {
+      "utc_now": {
+        "type": "String"
+      }
+    }
+  }
+}

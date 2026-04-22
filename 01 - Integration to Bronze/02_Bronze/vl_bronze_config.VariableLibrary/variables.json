@@ -1,0 +1,17 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/variableLibrary/definition/variables/1.0.0/schema.json",
+  "variables": [
+    {
+      "name": "raw_cleanup_mode",
+      "note": "Processing mode: \"today\" | \"all\" | \"last_n\"",
+      "type": "String",
+      "value": "all"
+    },
+    {
+      "name": "raw_cleanup_last_n_partitions",
+      "note": "Number of partitions to process when mode = \"last_n\"",
+      "type": "Integer",
+      "value": 1
+    }
+  ]
+}

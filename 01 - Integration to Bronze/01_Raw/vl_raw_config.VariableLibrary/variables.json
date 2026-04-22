@@ -1,0 +1,59 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/variableLibrary/definition/variables/1.0.0/schema.json",
+  "variables": [
+    {
+      "name": "sql_server",
+      "note": "",
+      "type": "String",
+      "value": "SQLVM"
+    },
+    {
+      "name": "sql_database",
+      "note": "",
+      "type": "String",
+      "value": "lightway"
+    },
+    {
+      "name": "sql_connection_name",
+      "note": "",
+      "type": "String",
+      "value": "ed4f1467-cc85-459e-bc26-9c65e203431c"
+    },
+    {
+      "name": "sql_auth_type",
+      "note": "",
+      "type": "String",
+      "value": "Basic"
+    },
+    {
+      "name": "diu_initial_load",
+      "note": "",
+      "type": "Integer",
+      "value": 256
+    },
+    {
+      "name": "diu_incremental",
+      "note": "",
+      "type": "Integer",
+      "value": 32
+    },
+    {
+      "name": "source_query_timeout",
+      "note": "",
+      "type": "String",
+      "value": "240"
+    },
+    {
+      "name": "lakehouse_id",
+      "note": "",
+      "type": "String",
+      "value": "15d22794-c0c7-49de-be6b-6c6fd1eff8e2"
+    },
+    {
+      "name": "Isolation_level",
+      "note": "",
+      "type": "String",
+      "value": "None"
+    }
+  ]
+}

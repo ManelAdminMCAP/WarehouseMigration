@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": " 01_Bronze Cleanup_Bi_WorkUnits"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "5090466e-fcc2-bc33-47fd-331c6d3620a9"
+  }
+}
